@@ -22,7 +22,13 @@ MPS_CTRL_PROG = 'nvidia-cuda-mps-control'
 
 class MultiProcessServiceManager(object):
     """
-    Manage MPS server daemons.
+    Manage MPS control daemons.
+
+    Provides methods for querying, starting, and stopping MPS control daemons
+    for multiple supported GPUs. Since no process states are stored in the cache
+    instance, use of this class should not conflict with other tools that
+    manipulate the control daemons (such as running the command-line management
+    program).
     """
 
     def __init__(self):
@@ -46,6 +52,28 @@ class MultiProcessServiceManager(object):
         else:
             return map(int, out.split())
 
+    def _get_proc_environ(self, pid):
+        """
+        Retrieve environment of running control daemon.
+
+        Parameters
+        ----------
+        pid : int
+            MPS control daemon process ID.
+
+        Returns
+        -------
+        data : str
+            Process environment.
+        """
+
+        try:
+            f = open('/proc/%i/environ' % pid, 'r')
+        except:
+            return ''
+        else:
+            return f.read().replace('\0', '\n')
+        
     def get_mps_dir(self, pid):
         """
         Find pipe directory for MPS control daemon process.
@@ -58,21 +86,41 @@ class MultiProcessServiceManager(object):
         Returns
         -------
         mps_dir : str
-            Pipe directory associated with specified process.
+            Pipe directory associated with specified process. Returns an empty
+            string if the process is not found or is not an MPS control daemon.
         """
 
+        data = self._get_proc_environ(pid)
+        r = re.search('^CUDA_MPS_PIPE_DIRECTORY=(.*)$',
+                      data, re.MULTILINE)
         try:
-            f = open('/proc/%i/environ' % pid, 'r')
+            return r.group(1)
         except:
             return ''
-        else:
-            data = f.read().replace('\0', '\n')
-            r = re.search('^CUDA_MPS_PIPE_DIRECTORY=(.*)$',
-                          data, re.MULTILINE)
-            try:
-                return r.group(1)
-            except:
-                return ''
+
+    def get_mps_dir_by_dev(self, dev):
+        """
+        Find pipe directory for MPS control daemon process managing a device.
+
+        Parameters
+        ----------
+        dev : int
+            Device ID.
+
+        Returns
+        -------
+        mps_dir : str
+            Pipe directory associated with specified process. Returns an empty
+            string if the device is not found or is not associated with an MPS
+            control daemon.
+        """
+        
+        pids = self.get_mps_ctrl_procs()
+        for pid in pids:
+            devs = self.get_visible_devices(pid)
+            if devs[0] == dev:
+                return self.get_mps_dir(pid)
+        return ''
 
     def get_visible_devices(self, pid):
         """
@@ -89,19 +137,14 @@ class MultiProcessServiceManager(object):
             List of device IDs.
         """
 
+        data = self._get_proc_environ(pid)
+        r = re.search('^CUDA_VISIBLE_DEVICES=(.*)$',
+                      data, re.MULTILINE)
         try:
-            f = open('/proc/%i/environ' % pid, 'r')
+            devs = r.group(1)
         except:
-            return ''
-        else:
-            data = f.read().replace('\0', '\n')
-            r = re.search('^CUDA_VISIBLE_DEVICES=(.*)$',
-                          data, re.MULTILINE)
-            try:
-                devs = r.group(1)
-            except:
-                return None
-            return map(int, devs.split(','))
+            return None
+        return map(int, devs.split(','))
 
     @pytools.memoize_method
     def get_supported_devs(self):
