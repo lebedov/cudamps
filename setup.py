@@ -47,6 +47,5 @@ if __name__ == "__main__":
         long_description = LONG_DESCRIPTION,
         url = URL,
         py_modules = ['cudamps'],
-        packages = PACKAGES,
         install_requires = ['pycuda >= 2014.1',
                             'pytools >= 2014.3'])
