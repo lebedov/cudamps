@@ -4,7 +4,7 @@
 Python interface to CUDA Multi-Process Service.
 """
 
-# Copyright (c) 2013-2014, Lev Givon
+# Copyright (c) 2015, Lev Givon
 # All rights reserved.
 # Distributed under the terms of the BSD license:
 # http://www.opensource.org/licenses/bsd-license
@@ -62,7 +62,7 @@ class MultiProcessServiceManager(object):
         """
 
         try:
-            f = open('/proc/%i/environ' % pid, 'r') 
+            f = open('/proc/%i/environ' % pid, 'r')
         except:
             return ''
         else:
@@ -90,7 +90,7 @@ class MultiProcessServiceManager(object):
         """
 
         try:
-            f = open('/proc/%i/environ' % pid, 'r') 
+            f = open('/proc/%i/environ' % pid, 'r')
         except:
             return ''
         else:
@@ -132,8 +132,9 @@ class MultiProcessServiceManager(object):
         dev : int
             Device ID.
         mps_dir : str
-            Pipe directory to be used by daemon. If no directory is 
-            specified, a new temporary directory is created.
+            Pipe directory to be used by daemon. If no directory is
+            specified, a new temporary directory is created. Logs are written to
+            this directory too.
 
         Notes
         -----

@@ -11,7 +11,7 @@ It supports creation and management of MPS control daemons for multiple GPUs.
 
 Prerequisites
 -------------
-* A Tesla or Quadro GPUs with compute capability 3.5 or later.
+* At least one Tesla or Quadro GPU with compute capability 3.5 or later.
 * `CUDA <http://www.nvidia.com/object/cuda_home_new.html>`_ 6.5 or later.
 * `PyCUDA <http://mathema.tician.de/software/pycuda/>`_.
 * `Pytools <https://pypi.python.org/pypi/pytools>`_.
