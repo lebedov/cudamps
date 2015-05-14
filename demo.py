@@ -11,13 +11,14 @@ Run this demo as follows: ::
 
 Requirements
 ------------
-* mpi4py (built against an MPI implementation that supports 
+* mpi4py (built against an MPI implementation that supports
   dynamic process management, e.g., OpenMPI)
 * numpy
 * pycuda
 """
 
 import os
+import shutil
 import sys
 
 from mpi4py import MPI
@@ -50,7 +51,7 @@ if __name__ == '__main__':
         mps_man = cudamps.MultiProcessServiceManager()
         mps_man.start(0)
         mps_dir = mps_man.get_mps_dir_by_dev(0)
-        print 'started MPS from launcher with directory %s' % mps_dir
+        print 'started MPS control daemon from launcher with directory %s' % mps_dir
 
         # Create lists of parameters:
         maxprocs = 3
@@ -68,10 +69,13 @@ if __name__ == '__main__':
                                             info=info_list)
         comm.Disconnect()
         mps_man.stop(mps_man.get_mps_proc_by_dev(0))
-        print 'stopped MPS from launcher'
+        print 'stopped MPS control daemon from launcher'
 
         # Show the server log:
         print '--- server log ---'+'-'*(100-18)
         with open(os.path.join(mps_dir, 'server.log'), 'r') as f:
             print f.read().strip()
         print '-'*100
+
+        # Clean up:
+        shutil.rmtree(mps_dir)
