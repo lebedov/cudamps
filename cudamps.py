@@ -228,7 +228,7 @@ class MultiProcessServiceManager(object):
                                  stderr=subprocess.PIPE,
                                  env=env)
             try:
-                out = p.communicate(timeout=1)[0]
+                out = p.communicate(timeout=0.5)[0]
             except subprocess.TimeoutExpired:
                 pass
             else:
