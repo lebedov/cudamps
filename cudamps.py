@@ -11,9 +11,14 @@ Python interface to CUDA Multi-Process Service.
 
 import os
 import re
-import subprocess
 import sys
 import tempfile
+
+# Needed to support timeouts with Python 2.7:
+if sys.version_info < (3, 0):
+    import subprocess32 as subprocess
+else:
+    import subprocess
 
 import pycuda.driver as drv
 import pytools
@@ -86,8 +91,8 @@ class MultiProcessServiceManager(object):
         Returns
         -------
         mps_dir : str
-            Pipe directory associated with specified process. Returns an empty
-            string if the process is not found or is not an MPS control daemon.
+            Pipe directory associated with specified process. Returns None
+            if the process is not found or is not an MPS control daemon.
         """
 
         data = self._get_proc_environ(pid)
@@ -96,7 +101,7 @@ class MultiProcessServiceManager(object):
         try:
             return r.group(1)
         except:
-            return ''
+            return None
 
     def get_mps_dir_by_dev(self, dev):
         """
@@ -110,19 +115,41 @@ class MultiProcessServiceManager(object):
         Returns
         -------
         mps_dir : str
-            Pipe directory associated with specified process. Returns an empty
-            string if the device is not found or is not associated with an MPS
+            Pipe directory associated with specified process. Returns None
+            if the device is not found or is not associated with an MPS
             control daemon.
         """
         
         pids = self.get_mps_ctrl_procs()
         for pid in pids:
-            devs = self.get_visible_devices(pid)
+            devs = self.get_visible_devs(pid)
             if devs[0] == dev:
                 return self.get_mps_dir(pid)
-        return ''
+        return None
 
-    def get_visible_devices(self, pid):
+    def get_mps_proc_by_dev(self, dev):
+        """
+        Find MPS control daemon process managing a device.
+
+        Parameters
+        ----------
+        dev : int
+            Device ID.
+
+        Returns
+        -------
+        pid : int
+            Process ID. None is returned if no process is found.
+        """
+
+        pids = self.get_mps_ctrl_procs()
+        for pid in pids:
+            devs = self.get_visible_devs(pid)
+            if devs[0] == dev:
+                return pid
+        return None
+
+    def get_visible_devs(self, pid):
         """
         Find devices exposed to specified MPS server process.
 
@@ -178,11 +205,6 @@ class MultiProcessServiceManager(object):
             Pipe directory to be used by daemon. If no directory is
             specified, a new temporary directory is created. Logs are written to
             this directory too.
-
-        Notes
-        -----
-        Permits one to start more than one daemon for the same device.
-        This probably shouldn't be allowed.
         """
 
         if mps_dir is None:
@@ -195,6 +217,8 @@ class MultiProcessServiceManager(object):
         except:
             raise ValueError('device not supported')
         else:
+            if self.get_mps_proc_by_dev(dev):
+                raise ValueError('process associated with device %s exists' % dev)
             env = os.environ
             env['CUDA_VISIBLE_DEVICES'] = str(i)
             env['CUDA_MPS_PIPE_DIRECTORY'] = mps_dir
@@ -203,11 +227,24 @@ class MultiProcessServiceManager(object):
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE,
                                  env=env)
-            out = p.communicate()[0]
-            if 'An instance of this daemon is already running' in out:
-                raise RuntimeError('running daemon already using %s' % mps_dir)
+            try:
+                out = p.communicate(timeout=1)[0]
+            except subprocess.TimeoutExpired:
+                pass
+            else:
+                if 'An instance of this daemon is already running' in out:
+                    raise RuntimeError('running daemon already using %s' % mps_dir)
 
-    def stop(self, pid):
+    def start_all(self):
+        """
+        Start MPS control daemons for all supported devices.
+        """
+
+        devs = self.get_supported_devs()
+        for i in devs:
+            self.start(i)
+
+    def stop(self, pid, clean=False):
         """
         Stop MPS control daemon.
 
@@ -215,11 +252,8 @@ class MultiProcessServiceManager(object):
         ----------
         pid : int
             MPS control daemon process ID.
-
-        Notes
-        -----
-        The pipe directory associated with the stopped daemon is not
-        deleted by this method.
+        clean : bool
+            If True, delete the pipe directory associated with the daemon.
         """
 
         mps_dir = self.get_mps_dir(pid)
@@ -231,3 +265,16 @@ class MultiProcessServiceManager(object):
         else:
             raise ValueError('error stopping process %i' % pid)
 
+    def stop_all(self, clean=False):
+        """
+        Stop all running MPS control daemons.
+
+        Parameters
+        ----------
+        clean : bool
+            If True, delete the pipe directories associated with the daemons.
+        """
+        
+        pids = self.get_mps_ctrl_procs()
+        for pid in pids:
+            self.stop(pid, clean)

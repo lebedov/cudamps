@@ -36,6 +36,11 @@ if __name__ == "__main__":
     if os.path.exists('MANIFEST'):
         os.remove('MANIFEST')
 
+    install_requires = ['pycuda >= 2014.1',
+                        'pytools >= 2014.3']
+    if sys.version_info < (3, 0):
+        install_requires.append('subprocess32')
+
     setup(
         name = NAME,
         version = VERSION,
@@ -47,5 +52,4 @@ if __name__ == "__main__":
         long_description = LONG_DESCRIPTION,
         url = URL,
         py_modules = ['cudamps'],
-        install_requires = ['pycuda >= 2014.1',
-                            'pytools >= 2014.3'])
+        install_requires = install_requires)
