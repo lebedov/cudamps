@@ -34,10 +34,16 @@ def worker():
 
     import pycuda.autoinit
     import pycuda.gpuarray as gpuarray
-    x_gpu = gpuarray.to_gpu(np.random.rand(3))
+    from pycuda.elementwise import ElementwiseKernel
+    
+    kernel = ElementwiseKernel('double *y, double *x, double a',
+                               'y[i] = a*x[i]')
+    x_gpu = gpuarray.to_gpu(np.random.rand(2))
+    y_gpu = gpuarray.empty_like(x_gpu)
+    kernel(y_gpu, x_gpu, np.double(2.0))
 
-    print 'I am process %d of %d on %s [x_gpu=%s]' % \
-        (rank, size, name, str(x_gpu.get()))
+    print 'I am process %d of %d on %s [x_gpu=%s, y_gpu=%s]' % \
+        (rank, size, name, str(x_gpu.get()), str(y_gpu.get()))
     comm.Disconnect()
 
 if __name__ == '__main__':
