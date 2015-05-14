@@ -16,6 +16,9 @@ Prerequisites
 * `PyCUDA <http://mathema.tician.de/software/pycuda/>`_.
 * `Pytools <https://pypi.python.org/pypi/pytools>`_.
 
+When used with Python 2.7, `subprocess32 
+<https://pypi.python.org/pypi/subprocess32>`_ is also required. 
+  
 Installation
 ------------
 The package may be installed as follows: ::
