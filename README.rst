@@ -25,6 +25,10 @@ The package may be installed as follows: ::
 
     pip install cudamps
 
+Usage
+-----
+See the file ``demo.py`` for an example of how to use the package.
+
 Development
 -----------
 The latest release of the package may be obtained from
@@ -32,10 +36,10 @@ The latest release of the package may be obtained from
 
 Author
 ------
-See the included AUTHORS.rst file for more information.
+See the included ``AUTHORS.rst`` file for more information.
 
 License
 -------
 This software is licensed under the
 `BSD License <http://www.opensource.org/licenses/bsd-license>`_.
-See the included LICENSE.rst file for more information.
+See the included ``LICENSE.rst`` file for more information.
