@@ -9,6 +9,10 @@ CUDAMPS is a Python interface to the `CUDA Multi-Process Service
 <https://docs.nvidia.com/deploy/pdf/CUDA_Multi_Process_Service_Overview.pdf>`_.  
 It supports creation and management of MPS control daemons for multiple GPUs.
 
+.. image:: https://img.shields.io/pypi/v/cudamps.svg
+    :target: https://pypi.python.org/pypi/cudamps
+    :alt: Latest Version
+
 Prerequisites
 -------------
 * At least one Tesla or Quadro GPU with compute capability 3.5 or later.
