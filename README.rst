@@ -12,6 +12,9 @@ It supports creation and management of MPS control daemons for multiple GPUs.
 .. image:: https://img.shields.io/pypi/v/cudamps.svg
     :target: https://pypi.python.org/pypi/cudamps
     :alt: Latest Version
+.. image:: https://img.shields.io/pypi/dm/cudamps.svg
+    :target: https://pypi.python.org/pypi/cudamps
+    :alt: Downloads
 
 Prerequisites
 -------------
