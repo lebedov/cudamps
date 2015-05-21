@@ -17,6 +17,7 @@ Requirements
 * pycuda
 """
 
+import atexit
 import os
 import shutil
 import sys
@@ -32,7 +33,12 @@ def worker():
     rank = comm.Get_rank()
     name = MPI.Get_processor_name()
 
-    import pycuda.autoinit
+    import pycuda.driver as drv
+    drv.init()
+    dev = drv.Device(rank)
+    ctx = dev.make_context()
+    atexit.register(ctx.pop)
+
     import pycuda.gpuarray as gpuarray
     from pycuda.elementwise import ElementwiseKernel
     
@@ -55,26 +61,22 @@ if __name__ == '__main__':
     else:
 
         mps_man = cudamps.MultiProcessServiceManager()
-        mps_man.start(0)
-        mps_dir = mps_man.get_mps_dir_by_dev(0)
+        mps_man.start()
+        mps_dir = mps_man.get_mps_dir(mps_man.get_mps_ctrl_proc())
         print 'started MPS control daemon from launcher with directory %s' % mps_dir
 
         # Create lists of parameters:
         maxprocs = 3
-        cmd_list = [sys.executable]*maxprocs
-        args_list = [script_file_name]*maxprocs
-        maxprocs_list = [1]*maxprocs
-        info_list = [MPI.Info.Create() for i in xrange(maxprocs)]
-        for i in xrange(maxprocs):
-            info_list[i].Set('env', 'CUDA_MPS_PIPE_DIRECTORY=%s' % mps_dir)
+        info = MPI.Info.Create()
+        info.Set('env', 'CUDA_MPS_PIPE_DIRECTORY=%s' % mps_dir)
 
         # Launch:
-        comm = MPI.COMM_SELF.Spawn_multiple(cmd_list,
-                                            args=args_list,
-                                            maxprocs=maxprocs_list,
-                                            info=info_list)
+        comm = MPI.COMM_SELF.Spawn(sys.executable,
+                                   args=[script_file_name],
+                                   maxprocs=maxprocs,
+                                   info=info)
         comm.Disconnect()
-        mps_man.stop(mps_man.get_mps_proc_by_dev(0))
+        mps_man.stop(mps_man.get_mps_ctrl_proc())
         print 'stopped MPS control daemon from launcher'
 
         # Show the server log:
