@@ -35,10 +35,17 @@ def worker():
 
     import pycuda.driver as drv
     drv.init()
-    dev = drv.Device(rank)
+
+    # Find maximum number of available GPUs:
+    max_gpus = drv.Device.count()
+
+    # Use modular arithmetic to avoid assigning a nonexistent GPU:
+    n = rank % max_gpus
+    dev = drv.Device(n)
     ctx = dev.make_context()
     atexit.register(ctx.pop)
 
+    # Execute a kernel:
     import pycuda.gpuarray as gpuarray
     from pycuda.elementwise import ElementwiseKernel
     
@@ -48,8 +55,8 @@ def worker():
     y_gpu = gpuarray.empty_like(x_gpu)
     kernel(y_gpu, x_gpu, np.double(2.0))
 
-    print 'I am process %d of %d on %s [x_gpu=%s, y_gpu=%s]' % \
-        (rank, size, name, str(x_gpu.get()), str(y_gpu.get()))
+    print 'I am process %d of %d on CPU %s using GPU %s of %s [x_gpu=%s, y_gpu=%s]' % \
+        (rank, size, name, n, max_gpus, str(x_gpu.get()), str(y_gpu.get()))
     comm.Disconnect()
 
 if __name__ == '__main__':
